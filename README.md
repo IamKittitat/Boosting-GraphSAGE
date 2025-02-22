@@ -1,9 +1,11 @@
 # Boosting-GraphSAGE
+
 Replicating of [Automatic disease prediction from human gut metagenomic data using boosting GraphSAGE](https://www.researchgate.net/publication/369688964_Automatic_disease_prediction_from_human_gut_metagenomic_data_using_boosting_GraphSAGE)
 
 ## Steps
-1. Calculate distance matrix (N,N) from OUT Table
-   - Choose between Cosine Dissimilarity, Manhattan Dissimilarity
+
+1. Calculate distance matrix (N,N) from OTU Table
+   - Choose between Cosine Dissimilarity, Manhattan Dissimilarity, Euclidean Distance
 2. Distance Threshold Computation: To determine if 2 nodes is neighbor
    - Median value of the distance matrix
 3. Calculate Neighbor threshold (max threshold each node can have)
@@ -20,10 +22,11 @@ Replicating of [Automatic disease prediction from human gut metagenomic data usi
       2. Iterative: Ada
 
 ## Experimental Setup
+
 - Comparison: ML, Ensemble ML, GNN, Ensemble GNN (Also include bagging GraphSAGE)
 - Parameter Settings (Use 1 GraphSAGE Model)
-  - Optimum no. of neighbor, best dissimilarity measure -> F1
+  - Optimum no. of neighbor (Perc_val), best dissimilarity measure -> F1
   - Find no. of layers, sample number -> F1
-    - * Learning rate, optimizer, hidden units, act func, loss func is fixed. (Ref 12,18 in table3)
+    - - Learning rate, optimizer, hidden units, act func, loss func is fixed. (Ref 12,18 in table3)
   - Find no. of base classifiers, f
 - Evaluation Metrics: F1, AUC, AUPRC
