@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 
-def process_csv(file_path, output_path, class_output_path):
+def create_OTU(file_path, output_path, class_output_path):
     df = pd.read_csv(file_path)
     
     df['disease'] = df['disease'].apply(lambda x: 0 if x == 'healthy' else 1)
@@ -17,9 +17,9 @@ def process_csv(file_path, output_path, class_output_path):
 def main():
     current_dir = os.path.dirname(__file__)
     input_file = os.path.join(current_dir, "../data/1_raw/GDMicro_T2D.csv")
-    output_file = os.path.join(current_dir, "../data/2_OTU/GDMicro_T2D_data.csv")
-    class_output_file = os.path.join(current_dir, "../data/2_OTU/GDMicro_T2D_class.csv")
-    process_csv(input_file, output_file, class_output_file)
+    output_file = os.path.join(current_dir, "../data/2_OTU/GDMicro_T2D_features.csv")
+    class_output_file = os.path.join(current_dir, "../data/2_OTU/GDMicro_T2D_labels.csv")
+    create_OTU(input_file, output_file, class_output_file)
 
 if __name__ == "__main__":
     main()
