@@ -9,7 +9,7 @@ class MeanAggregator(nn.Module):
         self.cuda = cuda
         self.gcn = gcn
         
-    def forward(self, nodes, to_neighs, num_sample=10):
+    def forward(self, nodes, to_neighs, num_sample):
         if num_sample is not None:
             samp_neighs = [set(random.sample(list(to_neigh), num_sample)) if len(to_neigh) >= num_sample else to_neigh for to_neigh in to_neighs]
         else:

@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import numpy as np
 
 class Encoder(nn.Module):
-    def __init__(self, features, feature_dim, embed_dim, adj_matrix, aggregator, num_sample=10, base_model=None, gcn=False, cuda=False):
+    def __init__(self, features, feature_dim, embed_dim, adj_matrix, aggregator, num_sample, base_model=None, gcn=False, cuda=False):
         super(Encoder, self).__init__()
 
         self.features = features

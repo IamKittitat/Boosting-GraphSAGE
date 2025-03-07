@@ -13,7 +13,7 @@ class SupervisedGraphSage(nn.Module):
     def forward(self, nodes):
         embeds = self.enc(nodes)
         scores = self.weight.mm(embeds)
-        return scores.t()
+        return torch.sigmoid(scores.t()) 
 
     def loss(self, nodes, labels):
         scores = self.forward(nodes)
