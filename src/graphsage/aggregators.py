@@ -28,7 +28,6 @@ class MeanAggregator(nn.Module):
 
         num_neigh = mask.sum(1, keepdim=True)
         mask = mask.div(num_neigh)
-
         embed_matrix = self.features(torch.LongTensor(unique_nodes_list))
         to_feats = mask.mm(embed_matrix)
         return to_feats
