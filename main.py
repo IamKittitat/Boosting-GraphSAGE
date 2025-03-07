@@ -1,40 +1,41 @@
 import os
+import yaml
 import numpy as np
 import pandas as pd
 import numpy as np
-
 from src.cal_distance_matrix import cal_distance_matrix
 from src.get_constant import cal_distance_threshold, cal_neighbor_threshold
 from src.graph_construction import md_graph_construction
 from src.train_graphsage import train_graphsage
 
-# CONSTANT
-# features name -> Ex. GDMicro_T2D
-# MEASUREMENT 
-# PERC_VAL
+def load_config(config_file="config.yaml"):
+    with open(config_file, 'r') as file:
+        return yaml.safe_load(file)
 
 def main():
+    config = load_config()
+    
     # Get OTU Features
     CURRENT_DIR = os.path.dirname(__file__)
-    features = pd.read_csv(os.path.join(CURRENT_DIR, "data/2_OTU/GDMicro_T2D_features.csv"), header=None)
+    features = pd.read_csv(os.path.join(CURRENT_DIR, config['file_path']['features_file']), header=None)
     features = features.to_numpy()
-    labels = pd.read_csv(os.path.join(CURRENT_DIR, "data/2_OTU/GDMicro_T2D_labels.csv"), header=None)
+    labels = pd.read_csv(os.path.join(CURRENT_DIR, config['file_path']['labels_file']), header=None)
     labels = labels.to_numpy().flatten()
 
     # Calculate Distance matrix
-    distance_matrix = cal_distance_matrix(features, "EUCLIDEAN")
-    np.savetxt(os.path.join(CURRENT_DIR, "data/3_distance_matrix/GDMicro_T2D.csv"), distance_matrix, delimiter=",")
+    distance_matrix = cal_distance_matrix(features, config['data']['dissimilarity_measure'])
+    np.savetxt(os.path.join(CURRENT_DIR, config['file_path']['distance_matrix_output']), distance_matrix, delimiter=",")
 
     # Prepare Distance Threshold, Neighbor Threshold (tau_sick, tau_healthy)
     distance_threshold = cal_distance_threshold(distance_matrix)
-    tau_sick, tau_healthy = cal_neighbor_threshold(labels, perc_val=20, is_balanced=False)
+    tau_sick, tau_healthy = cal_neighbor_threshold(labels, config['model']['perc_val'], config['data']['is_balanced'])
 
     # Get Graph (Adjacency Matrix) from the distance matrix and threshold
     adj_matrix = md_graph_construction(distance_matrix, distance_threshold, tau_sick, tau_healthy, labels)
-    np.savetxt(os.path.join(CURRENT_DIR, "data/4_adj_matrix/GDMicro_T2D.csv"), adj_matrix, delimiter=",", fmt="%d")
+    np.savetxt(os.path.join(CURRENT_DIR, config['file_path']['adj_matrix_output']), adj_matrix, delimiter=",", fmt="%d")
 
     # Preparing train/val/test | or stratify k-fold cv (k = 10)
-    train_graphsage(features, adj_matrix, labels)
+    train_graphsage(features, adj_matrix, labels, config)
 
         # Train model -> (feat_vec, adh, label) -> model + result?
         # Evaluate model
