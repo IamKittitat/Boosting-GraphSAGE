@@ -1,31 +1,13 @@
 import torch
 import torch.nn as nn
-from torch.nn import init
 import numpy as np
 import time
 import random
 from sklearn.metrics import f1_score
-from collections import defaultdict
 
 from src.graphsage.encoders import Encoder
 from src.graphsage.aggregators import MeanAggregator
-
-class SupervisedGraphSage(nn.Module):
-    def __init__(self, num_classes, enc):
-        super(SupervisedGraphSage, self).__init__()
-        self.enc = enc
-        self.xent = nn.CrossEntropyLoss()
-        self.weight = nn.Parameter(torch.empty(num_classes, enc.embed_dim))
-        init.xavier_uniform_(self.weight)
-
-    def forward(self, nodes):
-        embeds = self.enc(nodes)
-        scores = self.weight.mm(embeds)
-        return scores.t()
-
-    def loss(self, nodes, labels):
-        scores = self.forward(nodes)
-        return self.xent(scores, labels.squeeze())
+from src.graphsage.model import SupervisedGraphSage
 
 def load_cora():
     num_nodes = 2708
@@ -43,39 +25,37 @@ def load_cora():
                 label_map[info[-1]] = len(label_map)
             labels[i] = label_map[info[-1]]
 
-    adj_lists = defaultdict(set)
+    num_nodes = len(node_map)  # Number of nodes in the graph
+    adj_matrix = np.zeros((num_nodes, num_nodes), dtype=int)  # Create a matrix of zeros
+
     with open("cora/cora.cites") as fp:
         for line in fp:
             info = line.strip().split()
-            paper1 = node_map[info[0]]
+            paper1 = node_map[info[0]] 
             paper2 = node_map[info[1]]
-            adj_lists[paper1].add(paper2)
-            adj_lists[paper2].add(paper1)
-
-    return feat_data, labels, adj_lists
+            adj_matrix[paper1, paper2] = 1
+            adj_matrix[paper2, paper1] = 1
+        return feat_data, labels, adj_matrix
 
 def run_cora():
     np.random.seed(1)
     random.seed(1)
-    num_nodes = 2708
     feat_data, labels, adj_lists = load_cora()
-    
-    features = nn.Embedding(num_nodes, 1433)
+    num_nodes = len(feat_data)
+    num_feats = len(feat_data[0])
+    features = nn.Embedding(num_nodes, num_feats)
     features.weight = nn.Parameter(torch.FloatTensor(feat_data), requires_grad=False)
 
     agg1 = MeanAggregator(features, cuda=False)
-    enc1 = Encoder(features, 1433, 128, adj_lists, agg1, gcn=True, cuda=False)
+    enc1 = Encoder(features, num_feats, 128, adj_lists, agg1, num_sample=5, gcn=True, cuda=False)
     agg2 = MeanAggregator(lambda nodes: enc1(nodes).t(), cuda=False)
-    enc2 = Encoder(lambda nodes: enc1(nodes).t(), enc1.embed_dim, 128, adj_lists, agg2, base_model=enc1, gcn=True, cuda=False)
-
-    enc1.num_samples = 5
-    enc2.num_samples = 5
+    enc2 = Encoder(lambda nodes: enc1(nodes).t(), enc1.embed_dim, 128, adj_lists, agg2, num_sample=5, base_model=enc1, gcn=True, cuda=False)
 
     graphsage = SupervisedGraphSage(7, enc2)
     rand_indices = np.random.permutation(num_nodes)
-    test, val, train = rand_indices[:1000], rand_indices[1000:1500], list(rand_indices[1500:])
+    test, val, train = rand_indices[:1000], rand_indices[1000:1500], rand_indices[1500:]
 
-    optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, graphsage.parameters()), lr=0.7)
+    optimizer = torch.optim.SGD(graphsage.parameters(), lr=0.7)
     times = []
     for batch in range(100):
         batch_nodes = train[:256]
