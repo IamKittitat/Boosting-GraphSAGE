@@ -6,7 +6,7 @@ import numpy as np
 from src.cal_distance_matrix import cal_distance_matrix
 from src.get_constant import cal_distance_threshold, cal_neighbor_threshold
 from src.graph_construction import md_graph_construction
-from src.train_graphsage import train_graphsage
+from src.train_graphsage import train_graphsage, train_boosting_graphsage
 from src.load_config import load_config
 
 def main():
@@ -32,7 +32,8 @@ def main():
     np.savetxt(os.path.join(CURRENT_DIR, config['file_path']['adj_matrix_output']), adj_matrix, delimiter=",", fmt="%d")
 
     # Preparing train/val/test | or stratify k-fold cv (k = 10)
-    train_graphsage(features, adj_matrix, labels, config)
+    # train_graphsage(features, adj_matrix, labels, config)
+    train_boosting_graphsage(features, adj_matrix, labels, config)
 
 if __name__ == "__main__":
     main()
