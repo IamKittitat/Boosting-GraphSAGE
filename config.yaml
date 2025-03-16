@@ -19,4 +19,4 @@ model:
   embed_dim: 32
   lr: 0.005
   epoch: 50
-  base_estimators: 2
+  base_estimators: 10
