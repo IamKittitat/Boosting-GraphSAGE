@@ -53,6 +53,7 @@ def train_boosting_graphsage(features, adj_matrix, labels, config):
     
     skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
     auc_scores = []
+    train_auc_scores = []
     
     for train_idx, val_idx in skf.split(np.arange(len(features)), labels):
         N = len(train_idx)
@@ -89,6 +90,10 @@ def train_boosting_graphsage(features, adj_matrix, labels, config):
             alpha_m = 0.5 * np.log((1 - error_m) / (error_m + 1e-10))
             base_models.append(model)
             model_weights.append(alpha_m)
+
+            train_auc = roc_auc_score(labels[train_idx], boosting_predict(train_idx))
+            print(f"Train AUC:", train_auc)
+            train_auc_scores.append(train_auc)
             
             weights *= np.exp(alpha_m * incorrect)
             weights /= np.sum(weights)
@@ -97,6 +102,7 @@ def train_boosting_graphsage(features, adj_matrix, labels, config):
         auc_scores.append(val_auc)
         print(f"Validation AUC:", val_auc)
     
+    print("Average Train AUC:", sum(train_auc_scores) / len(train_auc_scores))
     avg_auc = sum(auc_scores) / len(auc_scores)
     print("Average Validation AUC:", avg_auc)
     
