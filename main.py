@@ -32,8 +32,8 @@ def main():
     np.savetxt(os.path.join(CURRENT_DIR, config['file_path']['adj_matrix_output']), adj_matrix, delimiter=",", fmt="%d")
 
     # Preparing train/val/test | or stratify k-fold cv (k = 10)
-    # train_graphsage(features, adj_matrix, labels, config)
-    train_boosting_graphsage(features, adj_matrix, labels, config)
+    train_graphsage(features, adj_matrix, labels, config)
+    # train_boosting_graphsage(features, adj_matrix, labels, config)
 
 if __name__ == "__main__":
     main()
