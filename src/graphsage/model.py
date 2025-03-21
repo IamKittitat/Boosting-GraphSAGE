@@ -21,13 +21,7 @@ class SupervisedGraphSage(nn.Module):
         self.encoders.append(enc)
         self.aggregators.append(agg)
 
-        prev_embed_fn = lambda nodes, prev_encoder=self.encoders[0]: prev_encoder(nodes).t()
-        agg = MeanAggregator(prev_embed_fn, cuda=False)
-        enc = Encoder(prev_embed_fn, self.encoders[0].embed_dim, embed_dim, adj_matrix, agg, num_sample=num_sample2, base_model=self.encoders[0], gcn=True, cuda=False)
-        self.encoders.append(enc)
-        self.aggregators.append(agg)
-        
-        for i in range(2, num_layers):
+        for i in range(1, num_layers):
             prev_embed_fn = lambda nodes, prev_encoder=self.encoders[i-1]: prev_encoder(nodes).t()
             agg = MeanAggregator(prev_embed_fn, cuda=False)
             enc = Encoder(prev_embed_fn, self.encoders[i - 1].embed_dim, embed_dim, adj_matrix, agg, num_sample=num_sample2, base_model=self.encoders[i - 1], gcn=True, cuda=False)
