@@ -35,8 +35,9 @@ def train_graphsage(features, adj_matrix, labels, embed_dim, lr, num_epochs, num
                 with torch.no_grad():
                     out_val = graphsage(features, edge_index)
                     probs = torch.softmax(out_val[val_idx], dim=1)[:, 1]
-                    auc = roc_auc_score(labels[val_idx].cpu().numpy(), probs.cpu().numpy())
-                print(f"Epoch: {epoch:03d}, Loss: {loss.item():.4f}, Val AUC: {auc:.4f}")
+                    train_auc = roc_auc_score(labels[train_idx].cpu().numpy(), torch.softmax(out[train_idx], dim=1)[:, 1].cpu().numpy())
+                    val_auc = roc_auc_score(labels[val_idx].cpu().numpy(), probs.cpu().numpy())
+                print(f"Epoch: {epoch:03d}, Train AUC: {train_auc:.4f}, Val AUC: {val_auc:.4f}")
 
         # Evaluate on test indices for the current fold
         graphsage.eval()
