@@ -30,7 +30,7 @@ def objective(trial: Trial):
 
     # Prepare Distance Threshold, Neighbor Threshold (tau_sick, tau_healthy)
     distance_threshold = cal_distance_threshold(distance_matrix)
-    tau_sick, tau_healthy = cal_neighbor_threshold(labels, config['data']['perc_val'], config['data']['is_balanced'])
+    tau_sick, tau_healthy = cal_neighbor_threshold(labels, config['model']['perc_val'], config['data']['is_balanced'])
 
     # Get Graph (Adjacency Matrix) from the distance matrix and threshold
     adj_matrix = md_graph_construction(distance_matrix, distance_threshold, tau_sick, tau_healthy, labels)
