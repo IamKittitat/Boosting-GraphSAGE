@@ -13,12 +13,7 @@ from src.load_config import load_config
 def objective(trial: Trial):
     config = load_config()
 
-    dissimilarity_measure = trial.suggest_categorical('dissimilarity_measure', ['EUCLIDEAN', 'COSINE', 'MANHATTAN']) #3
-    perc_val = trial.suggest_int('perc_val', 5, 50, step=5) #10
-    num_layers = trial.suggest_int('num_layers', 2, 6) #5
-    embed_dim = trial.suggest_categorical('embed_dim', [2**x for x in range(5, 9)]) #4
-    lr = trial.suggest_categorical('lr', [0.001, 0.005, 0.01, 0.05, 0.1]) #5
-    # base_estimators = trial.suggest_int('base_estimators', 5, 50, step=5) #10
+    base_estimators = trial.suggest_int('base_estimators', 5, 40, step=5)
 
     # Get OTU Features
     CURRENT_DIR = os.path.dirname(__file__)
@@ -28,14 +23,14 @@ def objective(trial: Trial):
     labels = labels.to_numpy().flatten()
 
     # Calculate Distance matrix using the sampled dissimilarity_measure
-    distance_matrix = cal_distance_matrix(features, dissimilarity_measure)
+    distance_matrix = cal_distance_matrix(features, config['data']['dissimilarity_measure'])
     
     # Save distance matrix
     np.savetxt(os.path.join(CURRENT_DIR, config['file_path']['distance_matrix_output']), distance_matrix, delimiter=",")
 
     # Prepare Distance Threshold, Neighbor Threshold (tau_sick, tau_healthy)
     distance_threshold = cal_distance_threshold(distance_matrix)
-    tau_sick, tau_healthy = cal_neighbor_threshold(labels, perc_val, config['data']['is_balanced'])
+    tau_sick, tau_healthy = cal_neighbor_threshold(labels, config['data']['perc_val'], config['data']['is_balanced'])
 
     # Get Graph (Adjacency Matrix) from the distance matrix and threshold
     adj_matrix = md_graph_construction(distance_matrix, distance_threshold, tau_sick, tau_healthy, labels)
@@ -48,9 +43,10 @@ def objective(trial: Trial):
     adj_matrix = torch.FloatTensor(adj_matrix)
     labels = torch.LongTensor(labels)
 
-    avg_auc = train_graphsage(features, adj_matrix, labels, embed_dim=embed_dim, 
-                              lr=lr, num_epochs=config['model']['epoch'], 
-                              num_layers=num_layers)
+    avg_auc = train_boosting_graphsage(features, adj_matrix, labels, embed_dim=config['model']['embed_dim'], 
+                                       lr=config['model']['lr'], num_epochs=config['model']['epoch'], 
+                                       base_estimators=base_estimators, 
+                                       num_layers=config['model']['num_layers'])
 
     return avg_auc
 

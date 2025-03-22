@@ -6,15 +6,15 @@ file_path:
 
 data:
   is_balanced: False
-  dissimilarity_measure: "EUCLIDEAN"
+  dissimilarity_measure: "MANHATTAN"
   val_test_ratio: 0.3
 
 model:
-  perc_val: 25
+  perc_val: 40
   is_balanced: false
   num_classes: 2
   num_layers: 3
   embed_dim: 32
-  lr: 0.005
+  lr: 0.001
   epoch: 50
   base_estimators: 10
