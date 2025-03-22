@@ -1,0 +1,4 @@
+torch==2.2.2
+torchtext==0.4
+optuna==4.2.0
+torch_geometric=2.6.1
