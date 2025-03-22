@@ -13,7 +13,7 @@ model:
   perc_val: 40
   is_balanced: false
   num_classes: 2
-  num_layers: 3
+  num_layers: 2
   embed_dim: 32
   lr: 0.001
   epoch: 50
