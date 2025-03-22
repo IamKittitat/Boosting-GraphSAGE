@@ -16,7 +16,9 @@ def objective(trial: Trial):
     dissimilarity_measure = trial.suggest_categorical('dissimilarity_measure', ['EUCLIDEAN', 'COSINE', 'MANHATTAN']) #3
     perc_val = trial.suggest_int('perc_val', 5, 50, step=5) #10
     num_layers = trial.suggest_int('num_layers', 2, 6) #5
-    base_estimators = trial.suggest_int('base_estimators', 5, 50, step=5) #10
+    embed_dim = trial.suggest_categorical('embed_dim', [2**x for x in range(5, 9)]) #4
+    lr = trial.suggest_categorical('lr', [0.001, 0.005, 0.01, 0.05, 0.1]) #5
+    # base_estimators = trial.suggest_int('base_estimators', 5, 50, step=5) #10
 
     # Get OTU Features
     CURRENT_DIR = os.path.dirname(__file__)
@@ -46,11 +48,11 @@ def objective(trial: Trial):
     adj_matrix = torch.FloatTensor(adj_matrix)
     labels = torch.LongTensor(labels)
 
-    avg_auc = train_boosting_graphsage(features, adj_matrix, labels, embed_dim=config['model']['embed_dim'], 
-                                       lr=config['model']['lr'], num_epochs=config['model']['epoch'], 
-                                       base_estimators=base_estimators, num_layers=num_layers)
+    avg_auc = train_graphsage(features, adj_matrix, labels, embed_dim=embed_dim, 
+                              lr=lr, num_epochs=config['model']['epoch'], 
+                              num_layers=num_layers)
 
-    return avg_auc  # Return the performance metric (AUC)
+    return avg_auc
 
 def main():
     study = optuna.create_study(direction='maximize')
