@@ -11,6 +11,7 @@ adj_matrix = torch.randint(0, 2, (1000, 1000)).float()
 train_idx = torch.arange(0, 800)
 test_idx = torch.arange(800, 1000)
 
+print(features.shape, labels.shape, adj_matrix.shape)
 edge_index, _ = dense_to_sparse(adj_matrix)
 
 class GraphSAGE(nn.Module):
@@ -23,6 +24,7 @@ class GraphSAGE(nn.Module):
         x = self.conv1(x, edge_index)
         x = F.relu(x)
         x = self.conv2(x, edge_index)
+        x = F.relu(x)
         return x
 
 in_channels = features.shape[1]

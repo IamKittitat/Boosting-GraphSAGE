@@ -1,5 +1,5 @@
 import os
-import yaml
+import torch
 import numpy as np
 import pandas as pd
 import numpy as np
@@ -31,7 +31,10 @@ def main():
     adj_matrix = md_graph_construction(distance_matrix, distance_threshold, tau_sick, tau_healthy, labels)
     np.savetxt(os.path.join(CURRENT_DIR, config['file_path']['adj_matrix_output']), adj_matrix, delimiter=",", fmt="%d")
 
-    # Preparing train/val/test | or stratify k-fold cv (k = 10)
+    # Train model & Evaluate
+    features = torch.FloatTensor(features)
+    adj_matrix = torch.FloatTensor(adj_matrix)
+    labels = torch.LongTensor(labels)
     train_graphsage(features, adj_matrix, labels, config)
     # train_boosting_graphsage(features, adj_matrix, labels, config)
 
