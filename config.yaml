@@ -14,8 +14,6 @@ model:
   is_balanced: false
   num_classes: 2
   num_layers: 3
-  num_sample1: 90
-  num_sample2: 15
   embed_dim: 32
   lr: 0.005
   epoch: 50

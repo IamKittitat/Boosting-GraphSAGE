@@ -2,11 +2,11 @@ import torch
 import torch.nn as nn
 import numpy as np
 from sklearn.metrics import roc_auc_score
-from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.model_selection import StratifiedKFold
 from torch_geometric.utils import dense_to_sparse
 from src.graphsage.model import GraphSAGE
 
-def train_graphsage(features, adj_matrix, labels, config):    
+def train_graphsage(features, adj_matrix, labels, embed_dim, lr, num_epochs, num_layers):    
     skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
     auc_scores = []
 
@@ -18,11 +18,11 @@ def train_graphsage(features, adj_matrix, labels, config):
         train_idx = torch.tensor(train_idx)
         val_idx = torch.tensor(val_idx)
         
-        graphsage = GraphSAGE(num_feats, config['model']['embed_dim'], 2)
-        optimizer = torch.optim.Adam(graphsage.parameters(), lr=config['model']['lr'])
+        graphsage = GraphSAGE(num_feats, embed_dim, 2, num_layers=num_layers)
+        optimizer = torch.optim.Adam(graphsage.parameters(), lr=lr)
         criterion = nn.CrossEntropyLoss()
 
-        for epoch in range(config['model']['epoch']):
+        for epoch in range(num_epochs):
             graphsage.train()
             optimizer.zero_grad()
             out = graphsage(features, edge_index)
@@ -49,10 +49,11 @@ def train_graphsage(features, adj_matrix, labels, config):
 
     avg_auc = sum(auc_scores) / len(auc_scores)
     print(f"Average Validation AUC: {avg_auc:.4f}")
+    return avg_auc
 
-def train_boosting_graphsage(features, adj_matrix, labels, config):
+def train_boosting_graphsage(features, adj_matrix, labels, embed_dim, lr, num_epochs, base_estimators, num_layers):
     def boosting_predict(val_idx, base_models, model_weights, edge_index):
-        final_predictions = torch.zeros((len(val_idx), config['model']['num_classes']))
+        final_predictions = torch.zeros((len(val_idx), 2))
         for model, weight in zip(base_models, model_weights):
             out_val = model(features, edge_index)
             weight = torch.tensor(weight, dtype=torch.float32)
@@ -60,7 +61,7 @@ def train_boosting_graphsage(features, adj_matrix, labels, config):
             final_predictions += weight * probs
         return final_predictions[:, 1]
     
-    M = config['model']['base_estimators']    
+    M = base_estimators
     base_models = []
     model_weights = []
     auc_scores = []
@@ -77,11 +78,11 @@ def train_boosting_graphsage(features, adj_matrix, labels, config):
         for m in range(M):
             print(f"Base estimators: {m+1}/{M}")
             bootstrap_idx = np.random.choice(train_idx, size=N, replace=True, p=weights)
-            graphsage = GraphSAGE(num_feats, config['model']['embed_dim'], 2)
-            optimizer = torch.optim.Adam(graphsage.parameters(), lr=config['model']['lr'])
+            graphsage = GraphSAGE(num_feats, embed_dim, 2, num_layers=num_layers)
+            optimizer = torch.optim.Adam(graphsage.parameters(), lr=lr)
             criterion = nn.CrossEntropyLoss()
 
-            for _ in range(config['model']['epoch']):
+            for _ in range(num_epochs):
                 graphsage.train()
                 optimizer.zero_grad()
                 out = graphsage(features, edge_index)
@@ -109,8 +110,9 @@ def train_boosting_graphsage(features, adj_matrix, labels, config):
         with torch.no_grad():
             final_train_auc = roc_auc_score(labels[train_idx], boosting_predict(train_idx, base_models, model_weights, edge_index))
             final_val_auc = roc_auc_score(labels[val_idx], boosting_predict(val_idx, base_models, model_weights, edge_index))
-            print(f"Final Train AUC: {final_train_auc:.4f}, Final Test AUC: {final_val_auc:.4f}")
+            print(f"Final Train AUC: {final_train_auc:.4f}, Final Val AUC: {final_val_auc:.4f}")
             auc_scores.append(final_val_auc)
     
     avg_auc = sum(auc_scores) / len(auc_scores)
     print(f"Average Validation AUC: {avg_auc:.4f}")
+    return avg_auc
