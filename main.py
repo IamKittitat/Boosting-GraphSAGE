@@ -35,8 +35,8 @@ def main():
     features = torch.FloatTensor(features)
     adj_matrix = torch.FloatTensor(adj_matrix)
     labels = torch.LongTensor(labels)
-    train_graphsage(features, adj_matrix, labels, config)
-    # train_boosting_graphsage(features, adj_matrix, labels, config)
+    # train_graphsage(features, adj_matrix, labels, config)
+    train_boosting_graphsage(features, adj_matrix, labels, config)
 
 if __name__ == "__main__":
     main()
