@@ -2,41 +2,66 @@ import torch
 import random
 import numpy as np
 from sklearn.metrics import roc_auc_score
-from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.model_selection import StratifiedKFold
 
 from src.graphsage.model import SupervisedGraphSage
 
-def train_graphsage(features, adj_matrix, labels, config):
-    graphsage = SupervisedGraphSage(features=features, 
-                                    adj_matrix=adj_matrix, 
-                                    num_classes=config['model']['num_classes'], 
-                                    num_layers=config['model']['num_layers'], 
-                                    num_sample1=config['model']['num_sample1'], 
-                                    num_sample2=config['model']['num_sample2'], 
-                                    embed_dim=config['model']['embed_dim']
-                                    )
-    
+def get_neighbors(nodes, adj_matrix, train_set = True):
+    all_neighbors = []
+    for node in nodes:
+        if(train_set):
+            neighbors = [i for i in range(len(adj_matrix)) if adj_matrix[node][i] == 1 and i != node and i in nodes]
+            neighbors.append(node)
+        else:
+            neighbors = [i for i in range(len(adj_matrix)) if adj_matrix[node][i] == 1 and i != node and i not in nodes] # Neighbour not in the val set
+
+        all_neighbors.append(neighbors)
+    return all_neighbors
+
+def train_graphsage(features, adj_matrix, labels, config):    
     skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
     auc_scores = []
-    
-    for train_idx, val_idx in skf.split(np.arange(len(features)), labels):
+
+    for fold, (train_idx, val_idx) in enumerate(skf.split(np.arange(len(features)), labels)):
+        train_mapper = {idx: i for i, idx in enumerate(train_idx)}
+        val_mapper = {idx: i for i, idx in enumerate(val_idx)}
+
+        train_idx = torch.tensor(train_idx, dtype=torch.long)
+        val_idx = torch.tensor(val_idx, dtype=torch.long)
+        graphsage = SupervisedGraphSage(
+            features=features[np.array(train_idx)],
+            num_classes=config['model']['num_classes'],
+            num_layers=config['model']['num_layers'],
+            num_sample1=config['model']['num_sample1'],
+            num_sample2=config['model']['num_sample2'],
+            embed_dim=config['model']['embed_dim']
+        )
         optimizer = torch.optim.Adam(graphsage.parameters(), lr=config['model']['lr'])
-        
+        train_neighbors = get_neighbors(train_idx.numpy(), adj_matrix)
+        train_neighbors_mapped = [[train_mapper[neighbor] for neighbor in neighbors] for neighbors in train_neighbors]
+        train_idx_mapped = [train_mapper[int(idx)] for idx in train_idx]  
         for epoch in range(config['model']['epoch']):
-            random.shuffle(train_idx)
+            graphsage.train()
             optimizer.zero_grad()
-            loss = graphsage.loss(train_idx, torch.LongTensor(labels[np.array(train_idx)]))
+            loss = graphsage.loss(train_idx_mapped, torch.LongTensor(labels[np.array(train_idx)]), train_neighbors_mapped)
             loss.backward()
             optimizer.step()
         
-        val_output = graphsage(val_idx).detach().numpy()
-        val_auc = roc_auc_score(labels[val_idx], val_output[:, 1])
+        # Validation Phase
+        graphsage.eval()
+        with torch.no_grad():
+            val_neighbors = get_neighbors(val_idx.numpy(), adj_matrix, train_set=False)
+            val_neighbors_mapped = [[train_mapper[neighbor] for neighbor in neighbors] for neighbors in val_neighbors]
+            val_idx_mapped = [val_mapper[int(idx)] for idx in val_idx]
+            val_output = graphsage(val_idx_mapped, val_neighbors_mapped).detach().numpy()
+        
+        val_auc = roc_auc_score(labels[val_idx.numpy()], val_output[:, 1])
         auc_scores.append(val_auc)
-        print(f"Validation AUC:", val_auc)
-    
+        print(f"Fold {fold+1} - Validation AUC: {val_auc:.4f}")
+
     avg_auc = sum(auc_scores) / len(auc_scores)
     print("Average Validation AUC:", avg_auc)
-    
+
     return avg_auc
 
 def train_boosting_graphsage(features, adj_matrix, labels, config):
