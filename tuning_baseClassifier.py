@@ -52,7 +52,7 @@ def objective(trial: Trial):
 
 def main():
     study = optuna.create_study(direction='maximize')
-    study.optimize(objective, n_trials=100)
+    study.optimize(objective, n_trials=5)
 
     print("Best Trial:")
     print(f"  AUC: {study.best_value}")
