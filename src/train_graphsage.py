@@ -5,52 +5,52 @@ from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import StratifiedKFold
 from torch_geometric.utils import dense_to_sparse
 from src.graphsage.model import GraphSAGE
+from torch_geometric.data import Data
 
-def train_graphsage(features, adj_matrix, labels, embed_dim, lr, num_epochs, num_layers):    
-    skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
-    auc_scores = []
+def train_graphsage(features_train, features_val, adj_matrix_train, labels_train, labels_val, edge_index_train, neighbor_val, embed_dim, lr, num_epochs, num_layers):    
+    num_feats = features_train.shape[1]
 
-    num_feats = features.shape[1]
-    edge_index, _ = dense_to_sparse(adj_matrix)
+    graphsage = GraphSAGE(num_feats, embed_dim, 2, num_layers=num_layers)
+    optimizer = torch.optim.Adam(graphsage.parameters(), lr=lr)
+    criterion = nn.CrossEntropyLoss()
 
-    for fold, (train_idx, val_idx) in enumerate(skf.split(np.arange(len(features)), labels)):
-        print(f"Fold {fold+1}")
-        train_idx = torch.tensor(train_idx)
-        val_idx = torch.tensor(val_idx)
-        
-        graphsage = GraphSAGE(num_feats, embed_dim, 2, num_layers=num_layers)
-        optimizer = torch.optim.Adam(graphsage.parameters(), lr=lr)
-        criterion = nn.CrossEntropyLoss()
+    for epoch in range(num_epochs):
+        graphsage.train()
+        optimizer.zero_grad()
+        out_train = graphsage(features_train, edge_index_train)
+        loss = criterion(out_train, labels_train)
+        loss.backward()
+        optimizer.step()
 
-        for epoch in range(num_epochs):
-            graphsage.train()
-            optimizer.zero_grad()
-            out = graphsage(features, edge_index)
-            loss = criterion(out[train_idx], labels[train_idx])
-            loss.backward()
-            optimizer.step()
-
-            if epoch % 10 == 0:
+        if epoch % 10 == 0:
+            val_prob = []
+            for features_node, neighbor_node in zip(features_val, neighbor_val):
+                features_neighbor = features_train[neighbor_node]
+                features_subgraph = torch.cat([features_node.unsqueeze(0), features_neighbor], dim=0)
+                num_neighbors = len(neighbor_node)
+                new_edges = []
+                for i in range(1, num_neighbors + 1):
+                    new_edges.append([0, i])
+                    new_edges.append([i, 0])
+                for i in range(num_neighbors):  
+                    for j in range(i+1, num_neighbors):
+                        if adj_matrix_train[neighbor_node[i]][neighbor_node[j]] == 1:
+                            new_edges.append([i+1, j+1])
+                            new_edges.append([j+1, i+1])
                 graphsage.eval()
                 with torch.no_grad():
-                    out_val = graphsage(features, edge_index)
-                    probs = torch.softmax(out_val[val_idx], dim=1)[:, 1]
-                    train_auc = roc_auc_score(labels[train_idx].cpu().numpy(), torch.softmax(out[train_idx], dim=1)[:, 1].cpu().numpy())
-                    val_auc = roc_auc_score(labels[val_idx].cpu().numpy(), probs.cpu().numpy())
-                print(f"Epoch: {epoch:03d}, Train AUC: {train_auc:.4f}, Val AUC: {val_auc:.4f}")
+                    edge_index_new = torch.tensor(new_edges, dtype=torch.long).t().contiguous()
+                    new_data = Data(x=features_subgraph, edge_index=edge_index_new)
+                    out_val = graphsage(new_data.x, new_data.edge_index)
+                    probs = torch.softmax(out_val, dim=1)[:, 1][0].item()
+                    val_prob.append(probs)
+            
+            val_prob = torch.tensor(val_prob, dtype=torch.float32)
+            train_auc = roc_auc_score(labels_train.cpu().numpy(), torch.softmax(out_train, dim=1)[:, 1].cpu().detach().numpy())
+            val_auc = roc_auc_score(labels_val.cpu().numpy(), val_prob.cpu().numpy())
+            print(f"Epoch: {epoch:03d}, Train AUC: {train_auc:.4f}, Val AUC: {val_auc:.4f}")
 
-        # Evaluate on test indices for the current fold
-        graphsage.eval()
-        with torch.no_grad():
-            out_val = graphsage(features, edge_index)
-            probs = torch.softmax(out_val[val_idx], dim=1)[:, 1]
-            fold_auc = roc_auc_score(labels[val_idx].cpu().numpy(), probs.cpu().numpy())
-            auc_scores.append(fold_auc)
-            print(f"Fold {fold+1} Validation AUC: {fold_auc:.4f}\n")
-
-    avg_auc = sum(auc_scores) / len(auc_scores)
-    print(f"Average Validation AUC: {avg_auc:.4f}")
-    return avg_auc
+    return val_auc
 
 def train_boosting_graphsage(features, adj_matrix, labels, embed_dim, lr, num_epochs, base_estimators, num_layers):
     def boosting_predict(val_idx, base_models, model_weights, edge_index):
