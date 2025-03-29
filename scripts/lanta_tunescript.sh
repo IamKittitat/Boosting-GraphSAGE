@@ -13,4 +13,4 @@ conda activate microw-boosting-graphsage
 
 cd /project/pc701039-microw/ktuntisak/Boosting-GraphSAGE
 
-python3 -u /project/pc701039-microw/ktuntisak/Boosting-GraphSAGE/hypertune.py
+python -u hypertune.py
