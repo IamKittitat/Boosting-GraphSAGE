@@ -1,7 +1,7 @@
 #!/bin/bash -l
-#SBATCH -p memory                 
+#SBATCH -p compute
 #SBATCH -N 1              
-#SBATCH --cpus-per-task=32        
+#SBATCH --cpus-per-task=16
 #SBATCH -t 20:00:00               
 #SBATCH --mail-user=kittitattuntisak@hotmail.com
 #SBATCH --mail-type=BEGIN,END,FAIL,TIME_LIMIT
