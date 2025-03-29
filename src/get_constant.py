@@ -10,11 +10,11 @@ def cal_neighbor_threshold(labels, perc_val, is_balanced = True):
     healthy_samples = total_samples - sick_samples
 
     if(is_balanced):
-        tau = (perc_val * total_samples) / 100
+        tau = (perc_val * total_samples) // 100
         return tau, 0
     else:
-        tau_sick = np.floor((perc_val * sick_samples) / 100)
-        tau_healthy = np.floor((perc_val * healthy_samples) / 100)
+        tau_sick = (perc_val * sick_samples) // 100
+        tau_healthy = (perc_val * healthy_samples) // 100
         return tau_sick, tau_healthy
 
     
