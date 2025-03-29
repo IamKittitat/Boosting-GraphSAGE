@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #SBATCH -p memory                 
-#SBATCH -N 32                      
+#SBATCH -N 1              
 #SBATCH --cpus-per-task=32        
 #SBATCH -t 20:00:00               
 #SBATCH --mail-user=kittitattuntisak@hotmail.com
