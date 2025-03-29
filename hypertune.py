@@ -19,7 +19,7 @@ def objective(trial):
     config['model']['embed_dim'] = trial.suggest_categorical('embed_dim', [2**x for x in range(5, 9)]) #4
     config['model']['lr'] =trial.suggest_categorical('lr', [0.001, 0.005, 0.01, 0.05, 0.1]) #5
     config['model']['base_estimators'] = trial.suggest_int('base_estimators', 5, 50, step=5) #10
-    config['model']['epoch'] = trial.suggest_int('epoch', 50, 200, step=10) #16
+    config['model']['epoch'] = trial.suggest_int('epoch', 50, 100, step=10) #16
     config['model']['num_layers'] = trial.suggest_int('num_layers', 2, 6) #5
 
     # Get OTU Features
