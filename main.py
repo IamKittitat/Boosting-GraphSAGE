@@ -65,20 +65,21 @@ def main():
         labels_train = labels_torch[train_idx]
         labels_val = labels_torch[val_idx]
 
-        val_auc = train_graphsage(features_train, features_val, adj_matrix_train_torch, labels_train, labels_val, edge_index_train, 
-                        neighbor_val, embed_dim=config['model']['embed_dim'], lr=config['model']['lr'], 
-                        num_epochs=config['model']['epoch'], num_layers=config['model']['num_layers'])
+        # val_auc = train_graphsage(features_train, features_val, adj_matrix_train_torch, labels_train, labels_val, edge_index_train, 
+        #                 neighbor_val, embed_dim=config['model']['embed_dim'], lr=config['model']['lr'], 
+        #                 num_epochs=config['model']['epoch'], num_layers=config['model']['num_layers'])
+        
+        val_auc = train_boosting_graphsage(features_train, features_val, adj_matrix_train_torch, labels_train, labels_val, 
+                                           edge_index_train, neighbor_val, embed_dim=config['model']['embed_dim'], 
+                                           lr=config['model']['lr'], base_estimators=config['model']['base_estimators'],
+                                           num_epochs=config['model']['epoch'], num_layers=config['model']['num_layers'])
         auc_scores.append(val_auc)
 
     avg_auc = sum(auc_scores) / len(auc_scores)
     print(f"Average Validation AUC: {avg_auc:.4f}")
 
     # # Train model & Evaluate
-    # train_graphsage(features, adj_matrix, labels, embed_dim=config['model']['embed_dim'], lr=config['model']['lr'], num_epochs=config['model']['epoch'], num_layers=config['model']['num_layers'])
-    # avg_auc = train_boosting_graphsage(features, adj_matrix, labels, embed_dim=config['model']['embed_dim'], 
-    #                                    lr=config['model']['lr'], num_epochs=config['model']['epoch'], 
-    #                                    base_estimators=config['model']['base_estimators'], 
-    #                                    num_layers=config['model']['num_layers'])
+    
 
 if __name__ == "__main__":
     main()
