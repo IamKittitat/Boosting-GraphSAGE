@@ -16,7 +16,7 @@ def create_OTU(file_path, output_path, class_output_path):
 
 def main():
     current_dir = os.path.dirname(__file__)
-    input_file = os.path.join(current_dir, "../data/1_feature_engineering/GDmicro_T2D_genus.csv")
+    input_file = os.path.join(current_dir, "../data/1_feature_engineering/GDmicro_T2D_family.csv")
     output_file = os.path.join(current_dir, "../data/2_OTU/GDMicro_T2D_features.csv")
     class_output_file = os.path.join(current_dir, "../data/2_OTU/GDMicro_T2D_labels.csv")
     create_OTU(input_file, output_file, class_output_file)
