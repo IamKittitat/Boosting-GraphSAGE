@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 import numpy as np
 from sklearn.metrics import roc_auc_score
-from sklearn.model_selection import StratifiedKFold
-from torch_geometric.utils import dense_to_sparse
 from src.graphsage.model import GraphSAGE
 from torch_geometric.data import Data
 
@@ -130,6 +128,80 @@ def train_boosting_graphsage(features_train, features_val, adj_matrix_train, lab
     val_prob = torch.tensor(val_prob, dtype=torch.float32)
     final_train_auc = roc_auc_score(labels_train.cpu().numpy(), boosting_predict(base_models, model_weights, features_train, edge_index_train).detach().numpy())
     final_val_auc = roc_auc_score(labels_val.cpu().numpy(), val_prob.detach().numpy())
+    print(f"Final Train AUC: {final_train_auc:.4f}, Final Val AUC: {final_val_auc:.4f}")
+
+    return final_train_auc, final_val_auc
+
+def train_gradient_boosting_graphsage(
+    features_train, features_val, adj_matrix_train,
+    labels_train, labels_val, edge_index_train, neighbor_val,
+    embed_dim, lr, base_estimators, num_epochs, num_layers,
+    learning_rate_boost=0.1
+):
+    sigmoid = torch.nn.Sigmoid()
+
+    M = base_estimators
+    base_models = []
+
+    F_train = torch.zeros(len(features_train), dtype=torch.float32)
+
+    for m in range(M):
+        print(f"Boosting round: {m + 1}/{M}")
+        p_train = sigmoid(F_train)
+
+        residuals = (p_train - labels_train.float()).detach()
+
+        graphsage = GraphSAGE(features_train.size(1), embed_dim, 1, num_layers=num_layers)
+        optimizer = torch.optim.Adam(graphsage.parameters(), lr=lr)
+        criterion = nn.CrossEntropyLoss()
+
+        for _ in range(num_epochs):
+            graphsage.train()
+            optimizer.zero_grad()
+            out = graphsage(features_train, edge_index_train).squeeze()
+            loss = criterion(out, residuals)
+            loss.backward()
+            optimizer.step()
+
+        base_models.append(graphsage)
+
+        graphsage.eval()
+        with torch.no_grad():
+            update = graphsage(features_train, edge_index_train).squeeze()
+        F_train -= learning_rate_boost * update 
+
+    final_train_probs = sigmoid(F_train)
+    final_train_auc = roc_auc_score(labels_train.cpu().numpy(), final_train_probs.cpu().numpy())
+
+    val_probs = []
+    for features_node, neighbor_node in zip(features_val, neighbor_val):
+        features_neighbor = features_train[neighbor_node]
+        features_subgraph = torch.cat([features_node.unsqueeze(0), features_neighbor], dim=0)
+        num_neighbors = len(neighbor_node)
+        new_edges = []
+
+        for i in range(1, num_neighbors + 1):
+            new_edges.append([0, i])
+            new_edges.append([i, 0])
+
+        for i in range(num_neighbors):
+            for j in range(i + 1, num_neighbors):
+                if adj_matrix_train[neighbor_node[i]][neighbor_node[j]] == 1:
+                    new_edges.append([i + 1, j + 1])
+                    new_edges.append([j + 1, i + 1])
+
+        edge_index_new = torch.tensor(new_edges, dtype=torch.long).t().contiguous()
+        F_val = torch.tensor(0.0)
+        for model in base_models:
+            model.eval()
+            with torch.no_grad():
+                out = model(features_subgraph, edge_index_new).squeeze()[0]
+            F_val -= learning_rate_boost * out
+
+        prob_val = sigmoid(F_val.clone().detach())
+        val_probs.append(prob_val.item())
+
+    final_val_auc = roc_auc_score(labels_val.cpu().numpy(), np.array(val_probs))
     print(f"Final Train AUC: {final_train_auc:.4f}, Final Val AUC: {final_val_auc:.4f}")
 
     return final_train_auc, final_val_auc
