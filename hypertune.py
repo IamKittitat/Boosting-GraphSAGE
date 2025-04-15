@@ -85,7 +85,7 @@ def objective(trial):
 
 def main():
     study = optuna.create_study(direction='maximize')
-    study.optimize(objective, n_trials=100)
+    study.optimize(objective, n_trials=200)
 
     print(f"Best hyperparameters: {study.best_params}")
     print(f"Best AUC: {study.best_value:.4f}")
