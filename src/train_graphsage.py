@@ -132,4 +132,4 @@ def train_boosting_graphsage(features_train, features_val, adj_matrix_train, lab
     final_val_auc = roc_auc_score(labels_val.cpu().numpy(), val_prob.detach().numpy())
     print(f"Final Train AUC: {final_train_auc:.4f}, Final Val AUC: {final_val_auc:.4f}")
 
-    return final_val_auc
+    return final_train_auc, final_val_auc

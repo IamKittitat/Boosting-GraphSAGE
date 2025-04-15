@@ -74,7 +74,7 @@ def objective(trial):
         labels_val = labels_torch[val_idx]
 
         # Train the model and calculate AUC score
-        val_auc = train_boosting_graphsage(features_train, features_val, adj_matrix_train_torch, labels_train, labels_val, 
+        _, val_auc = train_boosting_graphsage(features_train, features_val, adj_matrix_train_torch, labels_train, labels_val, 
                                            edge_index_train, neighbor_val, embed_dim=config['model']['embed_dim'], 
                                            lr=config['model']['lr'], base_estimators=config['model']['base_estimators'],
                                            num_epochs=config['model']['epoch'], num_layers=config['model']['num_layers'])
