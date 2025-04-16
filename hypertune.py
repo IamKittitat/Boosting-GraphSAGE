@@ -21,6 +21,7 @@ def objective(trial):
     config['model']['base_estimators'] = trial.suggest_int('base_estimators', 5, 50, step=5) #10
     config['model']['epoch'] = trial.suggest_int('epoch', 50, 100, step=10) #16
     config['model']['num_layers'] = trial.suggest_int('num_layers', 2, 6) #5
+    lr_boost = trial.suggest_categorical('lr_boost', [0.001, 0.005, 0.01, 0.05, 0.1])
 
     # Get OTU Features
     CURRENT_DIR = os.path.dirname(__file__)
@@ -77,7 +78,8 @@ def objective(trial):
         _, val_auc = train_gradient_boosting_graphsage(features_train, features_val, adj_matrix_train_torch, labels_train, labels_val, 
                                            edge_index_train, neighbor_val, embed_dim=config['model']['embed_dim'], 
                                            lr=config['model']['lr'], base_estimators=config['model']['base_estimators'],
-                                           num_epochs=config['model']['epoch'], num_layers=config['model']['num_layers'])
+                                           num_epochs=config['model']['epoch'], num_layers=config['model']['num_layers'],
+                                           learning_rate_boost=lr_boost)
         auc_scores.append(val_auc)
 
     avg_auc = sum(auc_scores) / len(auc_scores)
