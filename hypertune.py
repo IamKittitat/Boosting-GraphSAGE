@@ -7,7 +7,7 @@ from sklearn.model_selection import StratifiedKFold
 from src.cal_distance_matrix import cal_distance_matrix
 from src.get_constant import cal_distance_threshold, cal_neighbor_threshold
 from src.graph_construction import md_graph_construction
-from src.train_graphsage import train_boosting_graphsage
+from src.train_graphsage import train_boosting_graphsage, train_gradient_boosting_graphsage
 from src.load_config import load_config
 from torch_geometric.utils import dense_to_sparse
 
@@ -74,7 +74,7 @@ def objective(trial):
         labels_val = labels_torch[val_idx]
 
         # Train the model and calculate AUC score
-        _, val_auc = train_boosting_graphsage(features_train, features_val, adj_matrix_train_torch, labels_train, labels_val, 
+        _, val_auc = train_gradient_boosting_graphsage(features_train, features_val, adj_matrix_train_torch, labels_train, labels_val, 
                                            edge_index_train, neighbor_val, embed_dim=config['model']['embed_dim'], 
                                            lr=config['model']['lr'], base_estimators=config['model']['base_estimators'],
                                            num_epochs=config['model']['epoch'], num_layers=config['model']['num_layers'])
