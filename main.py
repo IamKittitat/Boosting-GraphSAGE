@@ -23,7 +23,8 @@ def main():
 
     # 10 fold stratified cross-validation
     skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
-    auc_scores = []
+    train_auc_scores = []
+    val_auc_scores = []
 
 #     train_idx, val_idx = train_test_split(
 #     np.arange(len(features)),
@@ -80,10 +81,14 @@ def main():
                                            edge_index_train, neighbor_val, embed_dim=config['model']['embed_dim'], 
                                            lr=config['model']['lr'], base_estimators=config['model']['base_estimators'],
                                            num_epochs=config['model']['epoch'], num_layers=config['model']['num_layers'])
-        auc_scores.append(val_auc)
+        train_auc_scores.append(train_auc)
+        val_auc_scores.append(val_auc)
 
-    avg_auc = sum(auc_scores) / len(auc_scores)
-    print(f"Average Validation AUC: {avg_auc:.4f}")
+    avg_train_auc = sum(train_auc_scores) / len(train_auc_scores)
+    avg_val_auc = sum(val_auc_scores) / len(val_auc_scores)
+    
+    print(f"Average Train AUC: {avg_train_auc:.4f}")
+    print(f"Average Validation AUC: {avg_val_auc:.4f}")
 
 if __name__ == "__main__":
     main()
