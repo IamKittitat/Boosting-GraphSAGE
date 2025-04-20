@@ -3,7 +3,7 @@ import torch
 import numpy as np
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, train_test_split
 from src.cal_distance_matrix import cal_distance_matrix
 from src.get_constant import cal_distance_threshold, cal_neighbor_threshold
 from src.graph_construction import md_graph_construction
@@ -25,6 +25,13 @@ def main():
     skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
     auc_scores = []
 
+#     train_idx, val_idx = train_test_split(
+#     np.arange(len(features)),
+#     test_size=0.3,
+#     stratify=labels,
+#     random_state=42
+# )
+    
     for fold, (train_idx, val_idx) in enumerate(skf.split(np.arange(len(features)), labels)):
         print(f"Fold {fold+1}")
         train_idx = torch.tensor(train_idx)
@@ -69,7 +76,7 @@ def main():
         #                 neighbor_val, embed_dim=config['model']['embed_dim'], lr=config['model']['lr'], 
         #                 num_epochs=config['model']['epoch'], num_layers=config['model']['num_layers'])
         
-        train_auc, val_auc = train_gradient_boosting_graphsage(features_train, features_val, adj_matrix_train_torch, labels_train, labels_val, 
+        train_auc, val_auc = train_boosting_graphsage(features_train, features_val, adj_matrix_train_torch, labels_train, labels_val, 
                                            edge_index_train, neighbor_val, embed_dim=config['model']['embed_dim'], 
                                            lr=config['model']['lr'], base_estimators=config['model']['base_estimators'],
                                            num_epochs=config['model']['epoch'], num_layers=config['model']['num_layers'])

@@ -58,8 +58,7 @@ def train_boosting_graphsage(features_train, features_val, adj_matrix_train, lab
         for model, weight in zip(base_models, model_weights):
             out_val = model(features, edge_index)
             weight = torch.tensor(weight, dtype=torch.float32)
-            probs = torch.softmax(out_val, dim=1)
-            final_predictions += weight * probs
+            final_predictions += weight * out_val
         
         final_predictions = torch.softmax(final_predictions, dim=1)
         return final_predictions[:, 1]
@@ -74,7 +73,7 @@ def train_boosting_graphsage(features_train, features_val, adj_matrix_train, lab
     for m in range(M):
         print(f"Base estimators: {m+1}/{M}")
         bootstrap_idx = np.random.choice(np.arange(N), size=N, replace=True, p=weights)
-        graphsage = GraphSAGE(num_feats, embed_dim, 2, num_layers=num_layers)
+        graphsage = GraphSAGE(num_feats, embed_dim, 2, num_layers=num_layers, dropout=0, use_batchnorm=False)
         optimizer = torch.optim.Adam(graphsage.parameters(), lr=lr)
         criterion = nn.CrossEntropyLoss()
 
@@ -94,6 +93,7 @@ def train_boosting_graphsage(features_train, features_val, adj_matrix_train, lab
         incorrect = np.array(pred[bootstrap_idx] != labels_train[bootstrap_idx]).astype(int)
         error_m = np.sum(weights * incorrect) / np.sum(weights)
         if error_m > 0.5:
+            print(f"Error too high: {error_m:.4f} > 0.5, skipping this model")
             continue
         
         alpha_m = 0.5 * np.log((1 - error_m) / (error_m + 1e-10))
